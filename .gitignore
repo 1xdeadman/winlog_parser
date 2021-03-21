@@ -1,0 +1,6 @@
+data/
+venv/
+column_names_*
+log
+test.txt
+.idea
