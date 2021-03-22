@@ -181,8 +181,8 @@ def read_evt_logs(func, logs_file: str = 'data/Security.evtx', result_file: str 
 
 
 @click.command()
-@click.option("--logs_file", '-l', help="Путь с именем до файла логов")
-@click.option("--result_file", '-r', prompt="Путь к csv файлу", help="Путь с именем для сохранения файла зазоголовков")
+@click.option("--logs_file", '-l', help="Путь с именем до файла логов", required=True)
+@click.option("--result_file", '-r', help="Путь с именем для сохранения файла зазоголовков", required=True)
 def run(logs_file: str, result_file: str):
     read_evt_logs(calc, logs_file, result_file)
 

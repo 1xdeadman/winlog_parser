@@ -1,8 +1,5 @@
-import collect_all_column_names
-import create_columns
-import collect_data
+from src import collect_data, create_columns
 import click
-from pprint import pprint
 
 
 @click.command()
