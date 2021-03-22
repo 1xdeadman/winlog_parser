@@ -7,11 +7,6 @@ import time
 import click
 
 
-def save_in_file(data):
-    with open('log', 'a', encoding='windows-1251') as file:
-        file.write(f"||{str(data)}\n")
-
-
 column_names = {
     "System": {},
     "Data": {},
