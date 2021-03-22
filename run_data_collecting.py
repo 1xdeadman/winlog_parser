@@ -9,8 +9,6 @@ import click
 def run(fieldnames: str, logs_file: str, result_file: str):
     column_names = create_columns.get_short_name(fieldnames)
     collect_data.run(logs_file, result_file, column_names)
-    #pprint(column_names)
-    # print("len:", len(column_names))
 
 
 if __name__ == '__main__':
