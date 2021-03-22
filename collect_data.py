@@ -4,6 +4,7 @@ import Evtx.Views as e_views
 import xml.etree.ElementTree as ET
 import json
 import time
+import os
 
 
 _column_names = {}
@@ -69,7 +70,7 @@ def _process_priv_elem(tag_names: list[str], elem: ET.Element):
     for row in elem.text.split('\n'):
         tmp_tag_name = tag_names.copy()
         tmp_tag_name.append(row.strip())
-        set_column_value(tmp_tag_name, True)
+        set_column_value(tmp_tag_name, 1)
 
 
 def _get_attr(xml_data: ET.Element):
@@ -104,7 +105,8 @@ def _read_evt_logs(func, logs_file: str = 'Security.evtx', result_file: str = 'r
     global _row_values
     global_start = time.time()
     start = time.time()
-
+    if os.path.isfile(result_file):
+        os.remove(result_file)
     with open(result_file, 'w', encoding='utf-8', newline='') as file:
         writer = csv.DictWriter(file, _checked_column_names)
         writer.writeheader()
@@ -113,7 +115,7 @@ def _read_evt_logs(func, logs_file: str = 'Security.evtx', result_file: str = 'r
         print(e_views.XML_HEADER)
         for index, record in enumerate(log.records()):
             _row_values.clear()
-            _row_values = dict.fromkeys(_checked_column_names, '')
+            _row_values = dict.fromkeys(_checked_column_names, 0)
             log_data = record.xml()
             func(log_data)
             with open(result_file, 'a', encoding='utf-8', newline='') as file:
