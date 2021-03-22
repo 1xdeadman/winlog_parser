@@ -35,14 +35,6 @@ def fill_column_names(column_categories: list[str]):
         print(column_categories)
 
 
-def fill_column_value(data_name, data_value):
-    if column_names.get(data_name) is None:
-        column_names[data_name] = data_value
-        tmp = f"{data_name}: {data_value}"
-        print(tmp)
-        save_in_file(tmp)
-
-
 def process_system_elem(tag_names: list[str], elem: ET.Element):
     if elem.text is not None:
         tmp_tag_names = tag_names.copy()
@@ -102,49 +94,6 @@ def get_attr(xml_data: ET.Element):
         get_attr(elem)
 
 
-def get_attr_values(xml_data: ET.Element):
-
-    is_empty = True
-    tag_names = [get_tag_name(xml_data.tag)]
-    # print("tag:", tag_name)
-    if tag_names[0] == "Data":
-        if xml_data.attrib.get('Name') == "EnabledPrivilegeList":
-            tag_names.insert(0, "PrivilegeList")
-        else:
-            tag_names.insert(0, "Data")
-
-    else:
-        tag_names.insert(0, "System")
-
-    if xml_data.attrib.get('Name') is not None:
-        if tag_names[0] == "Data":
-            tag_names[-1] = f"({xml_data.attrib.get('Name')})"
-        else:
-            tag_names[-1] += f"_{xml_data.attrib.get('Name')}"
-
-    if xml_data.text is not None:
-        # print("    text:", xml_data.text)
-        if xml_data.attrib.get('Name') != "EnabledPrivilegeList":
-            fill_column_names(tag_names, xml_data.text)
-        else:
-            for row in xml_data.text.split('\n'):
-                fill_column_names(tag_names.append(row.strip()), True)
-        is_empty = False
-    if len(xml_data.attrib) > 0:
-        # print("    attribs:")
-        is_empty = False
-        for key, value in xml_data.attrib.items():
-            if key == "Name":
-                continue
-            # fill_column_names(f"{tag_name}||{key}", value)
-            if xml_data.attrib.get('Name') != "EnabledPrivilegeList":
-                fill_column_names(f"{tag_name}||{key}", value)
-
-            # print(f"        {key}: {value}")
-    for elem in xml_data:
-        get_attr(elem)
-
-
 def calc(text_data):
     xml_root: ET.Element = ET.fromstring(text_data)
     get_attr(xml_root)
@@ -170,12 +119,6 @@ def read_evt_logs(func, logs_file: str = 'data/Security.evtx', result_file: str 
             json.dump(column_names, file)
     except Exception as ex:
         print(ex)
-    '''try:
-        with open(result_file'data/column_names_windows-1251', 'w', encoding='windows-1251') as file:
-            json.dump(column_names, file)
-    except Exception as ex:
-        print(ex)
-    '''
 
     print(f"затраченно времени: {time.time() - global_start} секунд")
 
