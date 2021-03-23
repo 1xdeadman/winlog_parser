@@ -15,7 +15,7 @@ _row_values = {}
 def set_column_value(column_categories: list[str], value):
     global _row_values
     tmp = ""
-    if value == '':
+    if value in ['', '-']:
         value = 0
     for category in column_categories:
         tmp += "-" + category
