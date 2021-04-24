@@ -7,13 +7,10 @@ import time
 import os
 
 
-_column_names = {}
-_checked_column_names = []
-_row_values = {}
+IS_DEBUG = False
 
 
-def set_column_value(column_categories: list[str], value):
-    global _row_values
+def set_column_value(column_categories: list[str], value, _row_values: dict[str, dict]):
     tmp = ""
     if value in ['', '-']:
         value = 0
@@ -107,35 +104,38 @@ def _calc(text_data):
     _get_attr(xml_root)
 
 
-def _read_evt_logs(func, logs_file: str = 'Security.evtx', result_file: str = 'result.csv'):
-    global _row_values
+def _read_evt_logs(func, logs_file: str, result_file: str, column_names: list[str]):
     global_start = time.time()
     start = time.time()
+
     if os.path.isfile(result_file):
         os.remove(result_file)
     with open(result_file, 'w', encoding='utf-8', newline='') as file:
-        writer = csv.DictWriter(file, _checked_column_names)
+        writer = csv.DictWriter(file, column_names)
         writer.writeheader()
 
     with evtx.Evtx(logs_file) as log:
         print(e_views.XML_HEADER)
         for index, record in enumerate(log.records()):
             _row_values.clear()
-            _row_values = dict.fromkeys(_checked_column_names, 0)
+            _row_values = dict.fromkeys(column_names, 0)
             log_data = record.xml()
+
             func(log_data)
+
+            if IS_DEBUG:
+                if index == 1000:
+                    break
+
             with open(result_file, 'a', encoding='utf-8', newline='') as file:
-                writer = csv.DictWriter(file, _checked_column_names)
+                writer = csv.DictWriter(file, column_names)
                 writer.writerow(_row_values)
             if index % 10000 == 0:
                 stop = time.time()
                 print(f"{index}: {stop - start} секунд")
                 start = time.time()
-
     print(f"затраченно времени: {time.time() - global_start} секунд")
 
 
 def run(logs_file: str, result_file: str, column_names: list[str]):
-    global _checked_column_names
-    _checked_column_names = column_names
-    _read_evt_logs(func=_calc, logs_file=logs_file, result_file=result_file)
+    _read_evt_logs(func=_calc, logs_file=logs_file, result_file=result_file, column_names=column_names)
