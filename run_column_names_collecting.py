@@ -1,10 +1,10 @@
 import csv
-import Evtx.Evtx as evtx
-import Evtx.Views as e_views
+from evtx import PyEvtxParser
 import xml.etree.ElementTree as ET
 import json
 import time
 import click
+from typing import List
 
 
 column_names = {
@@ -18,7 +18,7 @@ def get_tag_name(tag: str):
     return tag.split("}")[-1]
 
 
-def fill_column_names(column_categories: list[str]):
+def fill_column_names(column_categories: List[str]):
     tmp = column_names
     is_create = False
     for category in column_categories:
@@ -30,7 +30,7 @@ def fill_column_names(column_categories: list[str]):
         print(column_categories)
 
 
-def process_system_elem(tag_names: list[str], elem: ET.Element):
+def process_system_elem(tag_names: List[str], elem: ET.Element):
     if elem.text is not None:
         tmp_tag_names = tag_names.copy()
         tmp_tag_names.append("TextValue")
@@ -42,7 +42,7 @@ def process_system_elem(tag_names: list[str], elem: ET.Element):
             fill_column_names(tmp_tag_names)
 
 
-def process_data_elem(tag_names: list[str], elem: ET.Element):
+def process_data_elem(tag_names: List[str], elem: ET.Element):
     if elem.attrib.get('Name') is not None:
         tag_names[-1] = f"{elem.attrib.get('Name')}"
     if len(elem.attrib) > 0:
@@ -59,7 +59,7 @@ def process_data_elem(tag_names: list[str], elem: ET.Element):
         fill_column_names(tmp_tag_name)
 
 
-def process_priv_elem(tag_names: list[str], elem: ET.Element):
+def process_priv_elem(tag_names: List[str], elem: ET.Element):
     for row in elem.text.split('\n'):
         tmp_tag_name = tag_names.copy()
         tmp_tag_name.append(row.strip())
@@ -98,24 +98,23 @@ def read_evt_logs(func, logs_file: str = 'data/Security.evtx', result_file: str 
     global_start = time.time()
     start = time.time()
     stop = 0
-    with evtx.Evtx(logs_file) as log:
-        print(e_views.XML_HEADER)
-        for index, record in enumerate(log.records()):
-            # if index > 0:
-            #     break
-            log_data = record.xml()
-            func(log_data)
-            if index % 10000 == 0:
-                stop = time.time()
-                print(f"{index}: {stop - start} секунд")
-                start = time.time()
+    log = PyEvtxParser(logs_file)
+    for index, record in enumerate(log.records()):
+        # if index > 0:
+        #     break
+        log_data = record['data']
+        func(log_data)
+        if index % 10000 == 0:
+            stop = time.time()
+            print(f"{index}: {stop - start} сек.")
+            start = time.time()
     try:
         with open(result_file, 'w', encoding='utf-8') as file:
             json.dump(column_names, file)
     except Exception as ex:
         print(ex)
 
-    print(f"затраченно времени: {time.time() - global_start} секунд")
+    print(f"затраченно времени: {time.time() - global_start} сек.")
 
 
 @click.command()

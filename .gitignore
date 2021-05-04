@@ -3,3 +3,4 @@ venv/
 log
 .idea
 tests/
+test_*

@@ -1,7 +1,8 @@
 import json
+from typing import Dict, List
 
 
-def set_path(path: str, path_dict: dict[str, dict]) -> list[str]:
+def set_path(path: str, path_dict: Dict[str, dict]) -> List[str]:
     if len(path_dict) != 0:
         res = []
         for subpath, value in path_dict.items():

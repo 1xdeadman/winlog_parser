@@ -1,17 +1,19 @@
 import csv
-import Evtx.Evtx as evtx
-import Evtx.Views as e_views
+from evtx import PyEvtxParser
 import xml.etree.ElementTree as ET
 import json
 import time
 import os
+from typing import List, Dict
 
 
 IS_DEBUG = False
 
 
-def set_column_value(column_categories: list[str], value, _row_values: dict[str, dict]):
+def set_column_value(column_categories: List[str], value, _row_values: Dict[str, dict]):
     tmp = ""
+    if type(value) is str:
+        value = value.strip()
     if value in ['', '-']:
         value = 0
     if value is False:
@@ -40,19 +42,19 @@ def _get_tag_name(tag: str):
     return tag.split("}")[-1]
 
 
-def _process_system_elem(tag_names: list[str], elem: ET.Element):
+def _process_system_elem(tag_names: List[str], elem: ET.Element, _row_values):
     if elem.text is not None:
         tmp_tag_names = tag_names.copy()
         tmp_tag_names.append("TextValue")
-        set_column_value(tmp_tag_names, elem.text)
+        set_column_value(tmp_tag_names, elem.text, _row_values)
     if len(elem.attrib) > 0:
         for key, value in elem.attrib.items():
             tmp_tag_names = tag_names.copy()
             tmp_tag_names.append(key)
-            set_column_value(tmp_tag_names, value)
+            set_column_value(tmp_tag_names, value, _row_values)
 
 
-def _process_data_elem(tag_names: list[str], elem: ET.Element):
+def _process_data_elem(tag_names: List[str], elem: ET.Element, _row_values):
     if elem.attrib.get('Name') is not None:
         tag_names[-1] = f"{elem.attrib.get('Name')}"
     if len(elem.attrib) > 0:
@@ -62,21 +64,21 @@ def _process_data_elem(tag_names: list[str], elem: ET.Element):
             if key != "EnabledPrivilegeList":
                 tmp_tag_name = tag_names.copy()
                 tmp_tag_name.append(key)
-                set_column_value(tmp_tag_name, value)
+                set_column_value(tmp_tag_name, value, _row_values)
     if elem.text is not None and tag_names[-1] != "EnabledPrivilegeList":
         tmp_tag_name = tag_names.copy()
         tmp_tag_name.append("TextValue")
-        set_column_value(tmp_tag_name, elem.text)
+        set_column_value(tmp_tag_name, elem.text, _row_values)
 
 
-def _process_priv_elem(tag_names: list[str], elem: ET.Element):
+def _process_priv_elem(tag_names: List[str], elem: ET.Element, _row_values):
     for row in elem.text.split('\n'):
         tmp_tag_name = tag_names.copy()
         tmp_tag_name.append(row.strip())
-        set_column_value(tmp_tag_name, 1)
+        set_column_value(tmp_tag_name, 1, _row_values)
 
 
-def _get_attr(xml_data: ET.Element):
+def _get_attr(xml_data: ET.Element, _row_values):
 
     tag_names = [_get_tag_name(xml_data.tag)]
 
@@ -89,53 +91,52 @@ def _get_attr(xml_data: ET.Element):
         tag_names.insert(0, "System")
 
     if tag_names[0] == "System":
-        _process_system_elem(tag_names, xml_data)
+        _process_system_elem(tag_names, xml_data, _row_values)
     elif tag_names[0] == "Data":
-        _process_data_elem(tag_names, xml_data)
+        _process_data_elem(tag_names, xml_data, _row_values)
     elif tag_names[0] == "PrivilegeList":
-        _process_priv_elem(tag_names, xml_data)
+        _process_priv_elem(tag_names, xml_data, _row_values)
 
     for elem in xml_data:
-        _get_attr(elem)
+        _get_attr(elem, _row_values)
 
 
-def _calc(text_data):
+def _calc(text_data, _row_values):
     xml_root: ET.Element = ET.fromstring(text_data)
-    _get_attr(xml_root)
+    _get_attr(xml_root, _row_values)
 
 
-def _read_evt_logs(func, logs_file: str, result_file: str, column_names: list[str]):
+def _read_evt_logs(func, logs_file: str, result_file: str, column_names: List[str]):
     global_start = time.time()
     start = time.time()
-
+    _row_values = dict()
     if os.path.isfile(result_file):
         os.remove(result_file)
     with open(result_file, 'w', encoding='utf-8', newline='') as file:
         writer = csv.DictWriter(file, column_names)
         writer.writeheader()
 
-    with evtx.Evtx(logs_file) as log:
-        print(e_views.XML_HEADER)
-        for index, record in enumerate(log.records()):
-            _row_values.clear()
-            _row_values = dict.fromkeys(column_names, 0)
-            log_data = record.xml()
+    log = PyEvtxParser(logs_file)
+    for index, record in enumerate(log.records()):
+        _row_values.clear()
+        _row_values = dict.fromkeys(column_names, 0)
+        log_data = record['data']
 
-            func(log_data)
+        func(log_data, _row_values)
 
-            if IS_DEBUG:
-                if index == 1000:
-                    break
+        if IS_DEBUG:
+            if index == 1000:
+                break
 
-            with open(result_file, 'a', encoding='utf-8', newline='') as file:
-                writer = csv.DictWriter(file, column_names)
-                writer.writerow(_row_values)
-            if index % 10000 == 0:
-                stop = time.time()
-                print(f"{index}: {stop - start} секунд")
-                start = time.time()
-    print(f"затраченно времени: {time.time() - global_start} секунд")
+        with open(result_file, 'a', encoding='utf-8', newline='') as file:
+            writer = csv.DictWriter(file, column_names)
+            writer.writerow(_row_values)
+        if index % 10000 == 0:
+            stop = time.time()
+            print(f"{index}: {stop - start} сек.")
+            start = time.time()
+    print(f"затраченно времени: {time.time() - global_start} сек.")
 
 
-def run(logs_file: str, result_file: str, column_names: list[str]):
+def run(logs_file: str, result_file: str, column_names: List[str]):
     _read_evt_logs(func=_calc, logs_file=logs_file, result_file=result_file, column_names=column_names)
