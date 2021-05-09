@@ -1,10 +1,11 @@
-import csv
-from evtx import PyEvtxParser
-import xml.etree.ElementTree as ET
 import json
 import time
 import click
+import xml.etree.ElementTree as ET
 from typing import List
+
+
+from evtx import PyEvtxParser
 
 
 column_names = {
@@ -89,7 +90,7 @@ def get_attr(xml_data: ET.Element):
         get_attr(elem)
 
 
-def calc(text_data):
+def calc(text_data: str):
     xml_root: ET.Element = ET.fromstring(text_data)
     get_attr(xml_root)
 
@@ -97,7 +98,6 @@ def calc(text_data):
 def read_evt_logs(func, logs_file: str = 'data/Security.evtx', result_file: str = 'data/column_names_utf_8'):
     global_start = time.time()
     start = time.time()
-    stop = 0
     log = PyEvtxParser(logs_file)
     for index, record in enumerate(log.records()):
         # if index > 0:

@@ -1,10 +1,11 @@
 import csv
-from evtx import PyEvtxParser
-import xml.etree.ElementTree as ET
-import json
 import time
 import os
+import xml.etree.ElementTree as ET
 from typing import List, Dict
+
+
+from evtx import PyEvtxParser
 
 
 IS_DEBUG = False
