@@ -16,10 +16,8 @@ def set_column_value(column_categories: List[str], value, _row_values: Dict[str,
         value = value.strip()
     if value in ['', '-']:
         value = 0
-    if value is False:
-        value = 0
-    if value is True:
-        value = 1
+    if type(value) is bool:
+        value = int(value)
     for category in column_categories:
         tmp += "-" + category
     if column_categories[0] == "PrivilegeList":
